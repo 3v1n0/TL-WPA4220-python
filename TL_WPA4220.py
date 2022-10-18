@@ -268,7 +268,13 @@ class TL_WPA4220(object):
 
     def get_system_log(self):
         self._require_login()
-        return self._encrypted_req('admin/syslog?form=log', self.Op.LOAD)
+        try:
+            return self._encrypted_req('admin/syslog?form=log', self.Op.LOAD)
+        except self.TL_WPA4220.TpError as e:
+            if e.error_code:
+                raise e
+            self.logger.warning('No log level set, impossible to get logging')
+            return []
 
     def get_system_log_filters(self, log_type=None):
         if not log_type:
@@ -465,6 +471,9 @@ if __name__ == '__main__':
 
     exit_status = True
     if args.action == 'show':
+        device.set_system_log_filters(
+            TL_WPA4220.LogType.ALL, TL_WPA4220.LogLevel.ALL)
+
         print('FirmwareInfo:', device.get_firmware_info())
         print('Region:', device.get_region())
         print('Locale:', device.get_locale())
